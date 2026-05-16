@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2026 台股股利二代健保費與退稅精準試算器</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #ffffff;
+            --text-main: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --border-color: #333333;
+            --danger-color: #ff5252;
+            --success-color: #4caf50;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .container { background-color: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; width: 100%; max-width: 480px; padding: 25px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+        h2 { font-size: 1.4rem; font-weight: 600; text-align: center; margin-bottom: 5px; color: var(--accent-color); }
+        .subtitle { font-size: 0.85rem; color: var(--text-muted); text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-size: 0.9rem; margin-bottom: 8px; color: var(--text-muted); font-weight: 500; }
+        input, select { width: 100%; padding: 12px; background-color: #2a2a2a; border: 1px solid var(--border-color); border-radius: 6px; color: var(--accent-color); font-size: 1rem; transition: border 0.2s; }
+        input:focus, select:focus { outline: none; border-color: var(--accent-color); }
+        button { width: 100%; padding: 14px; background-color: var(--accent-color); color: #000000; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 10px; transition: opacity 0.2s; }
+        button:hover { opacity: 0.9; }
+        .result-box { margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px; display: none; }
+        .result-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #2a2a2a; font-size: 0.95rem; }
+        .result-item:last-child { border-bottom: none; font-size: 1.1rem; font-weight: 600; margin-top: 5px; padding-top: 15px; border-top: 1px solid var(--border-color); }
+        .danger { color: var(--danger-color); }
+        .success { color: var(--success-color); }
+        .info-text { font-size: 0.75rem; color: var(--text-muted); margin-top: 25px; line-height: 1.5; border-left: 2px solid var(--border-color); padding-left: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>股利扣費與退稅試算器</h2>
+    <div class="subtitle">2026年最新費率 (二代健保 2.11% 試算)</div>
+    
+    <div class="form-group">
+        <label for="dividend">單筆股利總額 (元)</label>
+        <input type="number" id="dividend" placeholder="請輸入單筆現金或股票股利總額" min="0">
+    </div>
+    
+    <div class="form-group">
+        <label for="taxRate">個人綜所稅率級距</label>
+        <select id="taxRate">
+            <option value="0.05">5%</option>
+            <option value="0.12">12%</option>
+            <option value="0.20">20%</option>
+            <option value="0.30">30%</option>
+            <option value="0.40">40%</option>
+        </select>
+    </div>
+    
+    <button onclick="calculateResults()">一鍵精準計算</button>
+    
+    <div class="result-box" id="resultBox">
+        <div class="result-item">
+            <span>二代健保補充保費 (2.11%)</span>
+            <span id="nhiFee" class="danger">NT$ 0</span>
+        </div>
+        <div class="result-item">
+            <span>可抵減稅額 (8.5% 內)</span>
+            <span id="taxCredit" class="success">NT$ 0</span>
+        </div>
+        <div class="result-item">
+            <span>綜所稅實際增減 (併入計稅)</span>
+            <span id="taxImpact">NT$ 0</span>
+        </div>
+        <div class="result-item">
+            <span>預估淨回報 (含退抵稅效益)</span>
+            <span id="netReturn" class="success">NT$ 0</span>
+        </div>
+    </div>
+
+    <div class="info-text">
+        ※ 備註：2026年二代健保補充保費單筆起扣點為 20,000 元，費率為 2.11%。本計算機依據股利所得可抵減稅額 8.5% (上限 8 萬元) 及個人選擇合併計稅之綜合影響進行優化估算，實際稅務申報請以國稅局核定為準。
+    </div>
+</div>
+
+<script>
+    function calculateResults() {
+        const dividend = parseFloat(document.getElementById('dividend').value) || 0;
+        const taxRate = parseFloat(document.getElementById('taxRate').value);
+        
+        if (dividend <= 0) {
+            alert('請輸入正確的股利金額');
+            return;
+        }
+        
+        // 1. 二代健保計算 (2026 起扣點 20,000 元，費率 2.11%)
+        let nhiFee = 0;
+        if (dividend >= 20000) {
+            nhiFee = Math.round(dividend * 0.0211);
+        }
+        
+        // 2. 股利可抵減稅額 (8.5%)
+        const taxCredit = Math.round(dividend * 0.085);
+        
+        // 3. 綜所稅增加的稅額 (股利併入所得後乘上稅率)
+        const taxIncrease = Math.round(dividend * taxRate);
+        
+        // 4. 稅務淨影響 (可抵減稅額 - 應繳稅額) -> 正數代表可退稅或少繳稅，負數代表要補稅
+        const taxImpact = taxCredit - taxIncrease;
+        
+        // 5. 終極實領回報 (原本股利 - 健保費 + 稅務淨影響)
+        const netReturn = dividend - nhiFee + taxImpact;
+        
+        // 顯示結果並填入數據
+        document.getElementById('nhiFee').innerText = 'NT$ ' + nhiFee.toLocaleString();
+        document.getElementById('taxCredit').innerText = 'NT$ ' + taxCredit.toLocaleString();
+        
+        const taxImpactLog = document.getElementById('taxImpact');
+        if (taxImpact >= 0) {
+            taxImpactLog.innerText = '+NT$ ' + taxImpact.toLocaleString();
+            taxImpactLog.className = 'success';
+        } else {
+            taxImpactLog.innerText = '-NT$ ' + Math.abs(taxImpact).toLocaleString();
+            taxImpactLog.className = 'danger';
+        }
+        
+        document.getElementById('netReturn').innerText = 'NT$ ' + netReturn.toLocaleString();
+        document.getElementById('resultBox').style.display = 'block';
+    }
+</script>
+
+</body>
+</html>
